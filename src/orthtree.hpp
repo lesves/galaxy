@@ -1,90 +1,56 @@
-#ifndef ORTHTREE_H
-#define ORTHTREE_H
+#ifndef GALAXY_ORTHTREE_H
+#define GALAXY_ORTHTREE_H
 
 #include <array>
 #include <memory>
+
+#include "spatial.hpp"
 //#include <iostream>
 
 
 namespace orthtree {
-	using Dimension = std::size_t;
+	struct EmptyVal {};
+	struct EmptyAccum {
 
-	template<typename T, Dimension D>
-	class Point {
-	private:
-		std::array<T, D> coords_;
-
-	public:
-		Point() : coords_({}) {};
-		Point(const std::array<T, D>& coords) : coords_(coords) {};
-		Point(std::array<T, D>&& coords) : coords_(std::move(coords)) {};
-
-		const T& operator[](std::size_t idx) const {
-			return coords_[idx];
-		}
-
-		T& operator[](std::size_t idx) {
-			return coords_[idx];
-		}
-	};
-
-	template<typename T, Dimension D>
-	class Box {
-	public:
-		Point<T, D> center;
-		std::array<T, D> extent;
-
-		Box(const Point<T, D>& center, T ext_same): center(center) {
-			extent.fill(ext_same);
-		};
-		Box(const Point<T, D>& center, const std::array<T, D>& extent): center(center), extent(extent) {};
-
-		bool contains(const Point<T, D>& pt) {
-			for (std::size_t dim = 0; dim < D; ++dim) {
-				if (center[dim] - extent[dim] > pt[dim] || center[dim] + extent[dim] < pt[dim]) {
-					return false;
-				}
-			}
-			return true;
-		}
-
-		bool intersects(const Box<T, D>& box) {
-			for (std::size_t dim = 0; dim < D; ++dim) {
-				if (center[dim]-box.center[dim] >= extent[dim]+box.extent[dim]) {
-					return false;
-				}
-			}
-			return true;
-		}
 	};
 
 	class OrthTreeDefaultPolicy {
 	public:
+		using GetPoint = std::identity;
+		using AccumType = EmptyVal;
+
+		static constexpr bool use_accum = false;
+		AccumType initial;
+
 		std::size_t node_capacity;
 
 		OrthTreeDefaultPolicy(std::size_t node_capacity) : node_capacity(node_capacity) {}
 	};
 
-	template<typename T, Dimension D, typename Policy = OrthTreeDefaultPolicy>
-	class Node {
-	private:
-		const Policy& policy_;
+	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy>
+	struct TNode {
+		const Policy& policy;
 
-	public:
-		std::vector<Point<T, D>> points;
-		std::optional<std::array<std::unique_ptr<Node<T, D, Policy>>, 1 << D>> children;
+		std::vector<T> data;
+		typename Policy::AccumType accum_value;
 
-		Box<T, D> bbox;
+		std::optional<std::array<std::unique_ptr<TNode<T, Dim, Policy>>, 1 << Dim>> children;
 
-		Node(const Policy& policy, Box<T, D> bbox) : policy_(policy), bbox(bbox), points() {};
+		spatial::Box<typename Policy::NumType, Dim> bbox;
+
+		TNode(const Policy& policy, const spatial::Box<typename Policy::NumType, Dim>& bbox) : policy(policy), bbox(bbox) {};
+
+		bool is_leaf() const {
+			return !children.has_value();
+		}
 
 		bool subdivide() {
 			//std::cout << "subdivide\n";
 			children.emplace();
 
-			(*children)[0] = std::make_unique<Node>(policy_, bbox);
+			(*children)[0] = std::make_unique<TNode>(policy, bbox);
 
-			for (std::size_t d = 0; d < D; ++d) {
+			for (std::size_t d = 0; d < Dim; ++d) {
 				//std::cout << "split d=" << d << "\n";
 				for (std::size_t i = 0; i < 1<<d; ++i) {
 					//std::cout << "split i=" << i << "\n";
@@ -94,7 +60,7 @@ namespace orthtree {
 					auto right = bbox.center[d]+half;
 					//std::cout << "half=" << half << " left=" << left << " right=" << right << "\n";
 
-					(*children)[(1<<d) + i] = std::make_unique<Node>(policy_, (*children)[i]->bbox);
+					(*children)[(1<<d) + i] = std::make_unique<TNode>(policy, (*children)[i]->bbox);
 
 					(*children)[i]->bbox.center[d] = left;
 					(*children)[i]->bbox.extent[d] = half;
@@ -105,10 +71,10 @@ namespace orthtree {
 			}
 			//std::cout << "subdivision step ok\n";
 
-			for (auto&& point : points) {
+			for (auto&& value : data) {
 				auto ok = false;
-				for (std::size_t i = 0; i < 2 << D; ++i) {
-					if ((*children)[i]->insert(point)) {
+				for (std::size_t i = 0; i < 2 << Dim; ++i) {
+					if ((*children)[i]->insert(value)) {
 						ok = true;
 						break;
 					}
@@ -117,26 +83,39 @@ namespace orthtree {
 					return false;
 				}
 			}
-			points.clear();
+			data.clear();
 			return true;
 		}
 
-		bool insert(const Point<T, D>& point) {
-			if (!bbox.contains(point)) {
+		void accumulate(const T& value) {
+			static constexpr typename Policy::Accum accum;
+
+			accum(accum_value, value);
+		}
+
+		bool insert(const T& value) {
+			static constexpr typename Policy::GetPoint get_point;
+
+			if constexpr (Policy::use_accum) {
+				accumulate(value);
+			}
+
+			if (!bbox.contains(get_point(value))) {
 				return false;
 			}
 
 			if (children.has_value()) {
 				for (auto&& child : *children) {
-					if (child->insert(point)) {
+					if (child->insert(value)) {
 						return true;
 					}
 				}
 				return false;
 			} else {
-				points.push_back(point);
+				data.push_back(value);
 
-				if (points.size() > policy_.node_capacity) {
+				// TODO
+				if (data.size() > policy.node_capacity) {
 					return subdivide();
 				} else {
 					return true;
@@ -145,34 +124,34 @@ namespace orthtree {
 		}
 	};
 
-	template<typename T, Dimension D, typename Policy = OrthTreeDefaultPolicy>
+	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy>
 	class OrthTree {
 	private:
 		const Policy& policy_;
-		Node<T, D, Policy> root_;
+		TNode<T, Dim, Policy> root_;
 
 	public:
-		OrthTree(const Policy& policy, Box<T, D> bbox) : policy_(policy), root_(Node(policy_, bbox)) {};
+		OrthTree(const Policy& policy, const spatial::Box<typename Policy::NumType, Dim>& bbox) : policy_(policy), root_(TNode<T, Dim, Policy>(policy_, bbox)) {};
 
-		void insert(const Point<T, D>& point) {
-			if (!root_.insert(point)) {
-				throw std::runtime_error("unable to insert into tree");
-			}
+		using Node = TNode<T, Dim, Policy>;
+
+		bool insert(const T& value) {
+			return root_.insert(value);
 		}
 
-		const Node<T, D, Policy>& root() const {
+		const TNode<T, Dim, Policy>& root() const {
 			return root_;
 		}
 
-		Node<T, D, Policy>& root() {
+		TNode<T, Dim, Policy>& root() {
 			return root_;
 		}
 	};
 
-	template<typename T, typename P = OrthTreeDefaultPolicy>
+	template<typename T, typename P>
 	using QuadTree = OrthTree<T, 2, P>;
 
-	template<typename T, typename P = OrthTreeDefaultPolicy>
+	template<typename T, typename P>
 	using OctTree = OrthTree<T, 3, P>;
 }
 

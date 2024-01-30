@@ -1,11 +1,24 @@
+#ifndef GALAXY_GRAPHICS_H
+#define GALAXY_GRAPHICS_H
+
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <iomanip>
+#include <sstream>
 #include "orthtree.hpp"
 
-namespace graphics2d {
+template<typename F>
+std::string formatf(F num, std::size_t prec) {
+	std::stringstream stream;
+	stream << std::fixed << std::setprecision(prec) << num;
+	return stream.str();
+}
+
+class Graphics2D {
+public:
 	template<typename P>
-	void draw_quadtree_node(cv::Mat& img, const P& policy, const orthtree::Node<double, 2,  P>* node) {
+	static void draw_quadtree_node(cv::Mat& img, const P& policy, const orthtree::TNode<typename P::Body, 2, typename P::TreePolicy>* node) {
 		auto cx = node->bbox.center[0];
 		auto cy = node->bbox.center[1];
 		auto ex = node->bbox.extent[0];
@@ -24,12 +37,15 @@ namespace graphics2d {
 			1
 		);
 
-		if (node->children.has_value()) {
+		if (!node->is_leaf()) {
 			for (auto&& child : *(node->children)) {
 				draw_quadtree_node(img, policy, child.get());
 			}
 		} else {
-			for (auto&& point : node->points) {
+			for (auto&& value : node->data) {
+				typename P::TreePolicy::GetPoint get_point;
+				auto point = get_point(value);
+
 				cv::circle(
 					img, 
 					cv::Point(
@@ -45,14 +61,14 @@ namespace graphics2d {
 	}
 
 	template<typename P>
-	void draw_quadtree(cv::Mat& img, const P& policy, const orthtree::QuadTree<double, P>& qt) {
+	static void draw_quadtree(cv::Mat& img, const P& policy, const orthtree::QuadTree<typename P::Body, typename P::TreePolicy>& qt) {
 		draw_quadtree_node(img, policy, &qt.root());
 	}
 
 	template<typename P>
-	void draw_graphics(cv::Mat& img, const P& policy) {
+	static void draw_graphics(typename P::NumType time, cv::Mat& img, const P& policy) {
 		/* Draw timestamp */
-		auto time_text = "0 mil. let";
+		auto time_text = formatf(time, 0) + " mil. let";
 		cv::putText(img,
 			time_text,
 			cv::Point(0, 15),
@@ -79,20 +95,27 @@ namespace graphics2d {
 		cv::Point scale_start(size.width/2-scale_length/2, 30);
 		cv::Point scale_end(size.width/2-scale_length/2+scale_length, scale_start.y);
 		cv::line(img, scale_start, scale_end, cv::Scalar(255, 255, 255));
+		cv::line(img, cv::Point(scale_start.x, scale_start.y-3), cv::Point(scale_start.x, scale_start.y+3), cv::Scalar(255, 255, 255));
+		cv::line(img, cv::Point(scale_end.x, scale_end.y-3), cv::Point(scale_end.x, scale_end.y+3), cv::Scalar(255, 255, 255));
 	}
 
 	template<typename P>
-	void show(const P& policy, const orthtree::QuadTree<double, P>& qt) {
+	static void show(typename P::NumType time, const P& policy, const orthtree::QuadTree<typename P::Body, typename P::TreePolicy>& qt) {
 		auto out_width = policy.width*policy.display_scale;
 		auto out_height = policy.height*policy.display_scale;
 
 		cv::Mat img(out_width, out_height, CV_8UC3, cv::Scalar(0, 0, 0));
 		draw_quadtree(img, policy, qt);
 
-		draw_graphics(img, policy);
+		draw_graphics(time, img, policy);
 
 		/* Display */
 		cv::imshow("galaxy", img);
-		cv::waitKey(); 
 	}
-}
+
+	static bool poll_close() {
+		return cv::pollKey() == 'x';
+	}
+};
+
+#endif
