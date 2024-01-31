@@ -1,1 +1,3 @@
 *.bck
+.DS_Store
+build/

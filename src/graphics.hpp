@@ -29,11 +29,12 @@ public:
 		auto end_x = cx + ex + policy.extent_x;
 		auto end_y = cy + ey + policy.extent_y;
 
+		//std::cout << "nc: " << cx << " " << cy << " cnt: " << node->accum_value.count << "\n";
 		cv::rectangle(
 			img, 
 			cv::Point(start_x*policy.display_scale, start_y*policy.display_scale), 
 			cv::Point(end_x*policy.display_scale, end_y*policy.display_scale), 
-			cv::Scalar(255, 255, 255), 
+			cv::Scalar(100, 50, 50), 
 			1
 		);
 
@@ -52,7 +53,7 @@ public:
 						(point[0] + policy.extent_x) * policy.display_scale, 
 						(point[1] + policy.extent_y) * policy.display_scale
 					), 
-					3, 
+					2, 
 					cv::Scalar(255, 255, 255), 
 					-1
 				);
@@ -117,30 +118,31 @@ public:
 		return cv::pollKey() == 'x';
 	}
 
-	template<typename Stats>
-	static void plot(const Stats& stats) {
-		assert(!stats.kin_energy.empty());
+	template<typename Policy, typename Stats>
+	static void plot(const Policy& policy, const Stats& stats) {
+		if (stats.kin_energy.size() < 2) {
+			return;
+		}
 
-		std::size_t height = 200;
-		std::size_t width_scale = 5;
-		std::size_t width = stats.kin_energy.size()*width_scale;
+		cv::Mat plot(policy.plot_height, policy.plot_width, CV_8UC3, cv::Scalar(0, 0, 0));
 
-		cv::Mat plot(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
-
-		cv::line(plot, cv::Point(0, height/2), cv::Point(width, height/2), cv::Scalar(0, 255, 0));
+		cv::line(plot, cv::Point(0, policy.plot_height/2), cv::Point(policy.plot_width, policy.plot_height/2), cv::Scalar(0, 255, 0));
 
 		auto base = stats.kin_energy[0] + stats.pot_energy[0];
-		for (std::size_t i = 1; i < stats.kin_energy.size(); ++i) {
+
+		auto end = stats.kin_energy.size();
+		auto start = end >= policy.plot_width ? end-policy.plot_width : 0;
+
+		for (std::size_t i = 1; i < (end >= policy.plot_width ? policy.plot_width : end); ++i) {
 			cv::line(
 				plot, 
-				cv::Point((i-1)*width_scale, height - (stats.kin_energy[i-1] + stats.pot_energy[i-1])/(base*2)*height), 
-				cv::Point(i*width_scale, height - (stats.kin_energy[i] + stats.pot_energy[i])/(base*2)*height), 
+				cv::Point(i-1, policy.plot_height - (stats.kin_energy[start+i-1] + stats.pot_energy[start+i-1])/(base*2)*policy.plot_height), 
+				cv::Point(i,   policy.plot_height - (stats.kin_energy[start+i] + stats.pot_energy[start+i])/(base*2)*policy.plot_height), 
 				cv::Scalar(255, 255, 255)
 			);
 		}
 
-		cv::imshow("plots", plot);
-		cv::waitKey(0);
+		cv::imshow("energy", plot);
 	}
 };
 

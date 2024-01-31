@@ -7,9 +7,6 @@
 
 namespace orthtree {
 	struct EmptyVal {};
-	struct EmptyAccum {
-
-	};
 
 	class OrthTreeDefaultPolicy {
 	public:
@@ -68,7 +65,7 @@ namespace orthtree {
 			}
 			//std::cout << "subdivision step ok\n";
 
-			for (auto&& value : data) {
+			for (auto&& value : std::move(data)) {
 				auto ok = false;
 				for (std::size_t i = 0; i < 2 << Dim; ++i) {
 					if ((*children)[i]->insert(value)) {
@@ -93,22 +90,29 @@ namespace orthtree {
 		bool insert(const T& value) {
 			static constexpr typename Policy::GetPoint get_point;
 
-			if constexpr (Policy::use_accum) {
-				accumulate(value);
-			}
-
 			if (!bbox.contains(get_point(value))) {
 				return false;
 			}
 
+			//std::cout << "bbox: " << bbox.center[0] << " " << bbox.center[1] << "\n";
+			//std::cout << "part: " << value.pos[0] << " " << value.pos[1] << "\n";
+
 			if (children.has_value()) {
 				for (auto&& child : *children) {
 					if (child->insert(value)) {
+						if constexpr (Policy::use_accum) {
+							accumulate(value);
+						}
+
 						return true;
 					}
 				}
 				return false;
 			} else {
+				if constexpr (Policy::use_accum) {
+					accumulate(value);
+				}
+
 				data.push_back(value);
 
 				// TODO

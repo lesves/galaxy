@@ -4,13 +4,13 @@
 #include "orthtree.hpp"
 #include <utility>
 
-template<typename NumType>
-struct Stats {
-	std::vector<NumType> kin_energy;
-	std::vector<NumType> pot_energy;
-};
-
 namespace simulation {
+	template<typename NumType>
+	struct Stats {
+		std::vector<NumType> kin_energy;
+		std::vector<NumType> pot_energy;
+	};
+
 	template<typename Policy, typename Graphics>
 	class TreeSimulation {
 	private:
@@ -85,7 +85,7 @@ namespace simulation {
 			auto d = (body.pos-mc).norm();
 
 			if (node->bbox.s() < policy_.theta*d) {
-				assert(!node->bbox.contains(body.pos));
+				//assert(!node->bbox.contains(body.pos));
 				auto [acc, pot] = interact(body, mc, node->accum_value.total_mass);
 				res_acc += acc;
 				res_pot += pot;
@@ -114,6 +114,19 @@ namespace simulation {
 			for (auto& body : bodies) {
 				auto [acc, _] = traverse(body, &tree.root());
 				policy_.velocity_initialization(body, acc);
+			}
+
+			// Centroidal coordinates
+			typename Policy::Vector vel_mean;
+			for (auto&& body : bodies) {
+				vel_mean += body.vel;
+			}
+			vel_mean /= tree.root().accum_value.total_mass;
+			auto pos_mean = tree.root().accum_value.center_of_mass();
+
+			for (auto& body : bodies) {
+				body.pos -= pos_mean;
+				body.vel -= vel_mean;
 			}
 		}
 
@@ -147,27 +160,11 @@ namespace simulation {
 
 				stats.kin_energy.push_back(kin_energy);
 				stats.pot_energy.push_back(pot_energy);
-			}
 
-			/*typename Policy::Vector vel_mean;
-			for (auto&& body : bodies) {
-				vel_mean += body.vel;
+				graphics_.plot(policy_, stats);
 			}
-			vel_mean /= tree.root().accum_value.total_mass;
-			auto pos_mean = tree.root().accum_value.center_of_mass();
-
-			for (auto& body : bodies) {
-				body.pos -= pos_mean;
-				body.vel -= vel_mean;
-			}*/
 
 			return true;
-		}
-
-		void post() {
-			if (policy_.plot_energy) {
-				graphics_.plot(stats);
-			}
 		}
 	};
 }
