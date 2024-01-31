@@ -11,6 +11,8 @@ namespace spatial {
 		std::array<T, D> components_;
 
 	public:
+		static constexpr spatial::Dimension Dim = D;
+
 		Vector() : components_({}) {};
 		Vector(const std::array<T, D>& components) : components_(components) {};
 		Vector(std::array<T, D>&& components) : components_(std::move(components)) {};
@@ -81,12 +83,23 @@ namespace spatial {
 			}
 		}
 
-		T norm() const {
+		Vector<T, D> sqrt() const {
+			Vector<T, D> res;
+			for (std::size_t d = 0; d < D; ++d) {
+				res = std::sqrt(components_[d]);
+			}
+		}
+
+		T norm_squared() const {
 			T res = 0;
 			for (std::size_t d = 0; d < D; ++d) {
 				res += components_[d]*components_[d];
 			}
-			return std::sqrt(res);
+			return res;
+		}
+
+		T norm() const {
+			return std::sqrt(norm_squared());
 		}
 	};
 

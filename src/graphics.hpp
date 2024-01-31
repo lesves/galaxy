@@ -17,8 +17,8 @@ std::string formatf(F num, std::size_t prec) {
 
 class Graphics2D {
 public:
-	template<typename P>
-	static void draw_quadtree_node(cv::Mat& img, const P& policy, const orthtree::TNode<typename P::Body, 2, typename P::TreePolicy>* node) {
+	template<typename SimPolicy, typename TreePolicy>
+	static void draw_quadtree_node(cv::Mat& img, const SimPolicy& policy, const orthtree::TNode<typename SimPolicy::Body, 2, TreePolicy>* node) {
 		auto cx = node->bbox.center[0];
 		auto cy = node->bbox.center[1];
 		auto ex = node->bbox.extent[0];
@@ -43,7 +43,7 @@ public:
 			}
 		} else {
 			for (auto&& value : node->data) {
-				typename P::TreePolicy::GetPoint get_point;
+				typename SimPolicy::GetPoint get_point;
 				auto point = get_point(value);
 
 				cv::circle(
@@ -60,8 +60,8 @@ public:
 		}
 	}
 
-	template<typename P>
-	static void draw_quadtree(cv::Mat& img, const P& policy, const orthtree::QuadTree<typename P::Body, typename P::TreePolicy>& qt) {
+	template<typename SimPolicy, typename TreePolicy>
+	static void draw_quadtree(cv::Mat& img, const SimPolicy& policy, const orthtree::QuadTree<typename SimPolicy::Body, TreePolicy>& qt) {
 		draw_quadtree_node(img, policy, &qt.root());
 	}
 
@@ -99,12 +99,12 @@ public:
 		cv::line(img, cv::Point(scale_end.x, scale_end.y-3), cv::Point(scale_end.x, scale_end.y+3), cv::Scalar(255, 255, 255));
 	}
 
-	template<typename P>
-	static void show(typename P::NumType time, const P& policy, const orthtree::QuadTree<typename P::Body, typename P::TreePolicy>& qt) {
+	template<typename SimPolicy, typename TreePolicy>
+	static void show(typename SimPolicy::NumType time, const SimPolicy& policy, const orthtree::QuadTree<typename SimPolicy::Body, TreePolicy>& qt) {
 		auto out_width = policy.width*policy.display_scale;
 		auto out_height = policy.height*policy.display_scale;
 
-		cv::Mat img(out_width, out_height, CV_8UC3, cv::Scalar(0, 0, 0));
+		cv::Mat img(out_height, out_width, CV_8UC3, cv::Scalar(0, 0, 0));
 		draw_quadtree(img, policy, qt);
 
 		draw_graphics(time, img, policy);
@@ -115,6 +115,32 @@ public:
 
 	static bool poll_close() {
 		return cv::pollKey() == 'x';
+	}
+
+	template<typename Stats>
+	static void plot(const Stats& stats) {
+		assert(!stats.kin_energy.empty());
+
+		std::size_t height = 200;
+		std::size_t width_scale = 5;
+		std::size_t width = stats.kin_energy.size()*width_scale;
+
+		cv::Mat plot(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
+
+		cv::line(plot, cv::Point(0, height/2), cv::Point(width, height/2), cv::Scalar(0, 255, 0));
+
+		auto base = stats.kin_energy[0] + stats.pot_energy[0];
+		for (std::size_t i = 1; i < stats.kin_energy.size(); ++i) {
+			cv::line(
+				plot, 
+				cv::Point((i-1)*width_scale, height - (stats.kin_energy[i-1] + stats.pot_energy[i-1])/(base*2)*height), 
+				cv::Point(i*width_scale, height - (stats.kin_energy[i] + stats.pot_energy[i])/(base*2)*height), 
+				cv::Scalar(255, 255, 255)
+			);
+		}
+
+		cv::imshow("plots", plot);
+		cv::waitKey(0);
 	}
 };
 

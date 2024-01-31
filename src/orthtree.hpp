@@ -1,12 +1,9 @@
 #ifndef GALAXY_ORTHTREE_H
 #define GALAXY_ORTHTREE_H
 
-#include <array>
-#include <memory>
+#include <vector>
 
 #include "spatial.hpp"
-//#include <iostream>
-
 
 namespace orthtree {
 	struct EmptyVal {};
@@ -122,6 +119,18 @@ namespace orthtree {
 				}
 			}
 		}
+
+		template<typename LeafF, typename InternalF>
+		void traverse(const LeafF& leaf, const InternalF& internal) {
+			if (is_leaf()) {
+				leaf(data, bbox);
+			} else {
+				internal(accum_value, bbox);
+				for (auto&& child : *children) {
+					child.traverse(leaf, internal);
+				}
+			}
+		}
 	};
 
 	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy>
@@ -145,6 +154,11 @@ namespace orthtree {
 
 		TNode<T, Dim, Policy>& root() {
 			return root_;
+		}
+
+		template<typename LeafF, typename InternalF>
+		void traverse(const LeafF& leaf, const InternalF& internal) {
+			root_.traverse(internal, leaf);
 		}
 	};
 
