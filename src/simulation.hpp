@@ -1,39 +1,82 @@
 #ifndef GALAXY_SIMULATION_H
 #define GALAXY_SIMULATION_H
 
+#include "mass_distribution.hpp"
+#include "integration.hpp"
 #include "orthtree.hpp"
+#include "spatial.hpp"
+#include "config.hpp"
 #include <utility>
 
+#include <numbers>
+
+
 namespace simulation {
-	template<typename NumType>
-	struct Stats {
-		std::vector<NumType> kin_energy;
-		std::vector<NumType> pot_energy;
+	template<typename NT, spatial::Dimension D, bool include>
+	struct ConditionalAcc;
+
+	template<typename NT, spatial::Dimension D>
+	struct ConditionalAcc<NT, D, false> {};
+
+	template<typename NT, spatial::Dimension D>
+	struct ConditionalAcc<NT, D, true> {
+		spatial::Vector<NT, D> acc;
 	};
 
-	template<typename Policy, typename Graphics>
-	class TreeSimulation {
+	template<typename NumType, spatial::Dimension D, bool store_acc = true>
+	struct Body : public ConditionalAcc<NumType, D, store_acc> {
+		static constexpr spatial::Dimension Dim = D;
+		using Scalar = NumType;
+		using Vector = spatial::Vector<NumType, D>;
+		using Point = spatial::Point<NumType, D>;
+
+		struct GetPoint {
+			Point operator()(const Body& body) const {
+				return body.pos;
+			}
+		};
+
+		Point pos;
+		Vector vel;
+		Scalar mass;
+
+		Body(const Point& pos, const Vector& vel, Scalar mass): pos(pos), vel(vel), mass(mass) {};
+	};
+
+	template<typename NumType, bool store_acc = false>
+	using Body2D = Body<NumType, 2, store_acc>;
+
+	template<typename Scalar>
+	struct Stats {
+		std::vector<Scalar> kin_energy;
+		std::vector<Scalar> pot_energy;
+	};
+
+	template<typename Body, typename Graphics>
+	class TreeSimulationEngine {
 	private:
-		Policy policy_;
-		Graphics graphics_;
+		using Scalar = typename Body::Scalar;
+		using Vector = typename Body::Vector;
+		using Point = typename Body::Point;
 
 		struct TreePolicy {
-			using NumType = typename Policy::NumType;
-			using GetPoint = typename Policy::GetPoint;
+			using Item = Body;
+			using NumType = typename Body::Scalar;
+			using GetPoint = typename Body::GetPoint;
 
 			static constexpr bool use_accum = true;
 			struct AccumType {
 				std::size_t count = 0;
-				typename Policy::Vector pos_sum;
+				Vector pos_sum;
 
-				NumType total_mass = 0;
+				Scalar total_mass = 0;
 
-				typename Policy::Point center_of_mass() const {
-					return pos_sum/(NumType)count;
+				Point center_of_mass() const {
+					return pos_sum/(Scalar)count;
 				}
 			};
 			struct Accum {
-				void operator()(AccumType& cur, const typename Policy::Body& body) const {
+				void operator()(AccumType& cur, const Body& body) const {
 					cur.count += 1;
 					cur.pos_sum += body.pos;
 					cur.total_mass += body.mass;
@@ -42,11 +85,16 @@ namespace simulation {
 
 			std::size_t node_capacity = 1;
 		} tree_policy;
+		using TreeType = orthtree::OrthTree<Body, Body::Dim, TreePolicy>;
+		
+		integration::IntegrationMethod<Body> integration_;
+		Graphics graphics_;
 
-		using TreeType = orthtree::OrthTree<typename Policy::Body, Policy::Dim, TreePolicy>;
+		bool plot_energy_;
 
+		// TODO: Move as constructor to OrthTree
 		TreeType build_tree() {
-			TreeType tree(tree_policy, policy_.bbox);
+			TreeType tree(tree_policy, bbox);
 
 			for (auto&& body : bodies) {
 				tree.insert(body);
@@ -55,36 +103,26 @@ namespace simulation {
 			return tree;
 		}
 
-	public:
-		std::vector<typename Policy::Body> bodies;
-		typename Policy::NumType time = 0;
-
-		Stats<typename Policy::NumType> stats;
-
-		TreeSimulation(const Policy& policy, const Graphics& graphics): graphics_(graphics), TreeSimulation(policy) {}
-		TreeSimulation(const Policy& policy): policy_(policy), TreeSimulation() {}
-		TreeSimulation(): bodies(policy_.mass_distribution(policy_)) {}
-
-		std::pair<typename Policy::Vector, typename Policy::NumType> interact(const typename Policy::Body& body, const typename Policy::Point& other_pos, typename Policy::NumType other_mass) const {
+		std::pair<Vector, Scalar> interact(const Body& body, const Point& other_pos, Scalar other_mass) const {
 			auto diff = body.pos - other_pos;
 
 			auto dist = diff.norm();
-			auto smoothed = sqrt(dist*dist + policy_.eps*policy_.eps);
+			auto smoothed = sqrt(dist*dist + eps*eps);
 
-			auto acc = -policy_.G * other_mass * diff / std::pow(smoothed, 3);
-			auto pot = -policy_.G * body.mass * other_mass / smoothed / 2;
+			auto acc = -G * other_mass * diff / std::pow(smoothed, 3);
+			auto pot = -G * body.mass * other_mass / smoothed / 2;
 
 			return std::make_pair(acc, pot);
 		}
 
-		std::pair<typename Policy::Vector, typename Policy::NumType> traverse(const typename Policy::Body& body, typename TreeType::Node* node) const {
-			typename Policy::Vector res_acc;
-			typename Policy::NumType res_pot = 0.;
+		std::pair<Vector, Scalar> traverse(const Body& body, typename TreeType::Node* node) const {
+			Vector res_acc;
+			Scalar res_pot = 0.;
 
 			auto mc = node->accum_value.center_of_mass();
 			auto d = (body.pos-mc).norm();
 
-			if (node->bbox.s() < policy_.theta*d) {
+			if (node->bbox.s() < theta*d) {
 				//assert(!node->bbox.contains(body.pos));
 				auto [acc, pot] = interact(body, mc, node->accum_value.total_mass);
 				res_acc += acc;
@@ -108,16 +146,74 @@ namespace simulation {
 			return std::make_pair(res_acc, res_pot);
 		}
 
-		void init() {
+		// TODO: Generalize
+		void velocity_initialization(Body& body, const typename Body::Vector& acc) {
+			using Scalar = typename Body::Scalar;
+
+			Scalar a = acc.norm();
+
+			Scalar r = body.pos.norm();
+			Scalar theta = std::atan2(body.pos[1], body.pos[0]);
+
+			auto tmp = body.pos * acc / r / a;
+			Scalar cosphi = -tmp[0]-tmp[1];
+			Scalar a_r = cosphi * a;
+			if (a_r < 0.) a_r = 0.;
+
+			Scalar v_t = sqrt(a_r * r);
+			Scalar v_r = 0;
+
+			body.vel[0] = v_t*std::cos(theta - std::numbers::pi/2) + v_r*std::cos(theta);
+			body.vel[1] = v_t*std::sin(theta - std::numbers::pi/2) + v_r*std::sin(theta);
+		}
+
+	public:
+		spatial::Box<Scalar, Body::Dim> bbox;
+		std::vector<Body> bodies;
+		Scalar time = 0;
+
+		Scalar dt;
+		Scalar theta;
+		Scalar eps;
+		Scalar G;
+
+		Stats<Scalar> stats;
+
+		spatial::Box<Scalar, Body::Dim> init_bbox(config::Config cfg) {
+			config::Config extent_ = cfg.get_or_fail("simulation.size.extent");
+			std::array<Scalar, 2> extent = { extent_.get_or_fail<Scalar>("x"), extent_.get_or_fail<Scalar>("y") };
+
+			spatial::Point<Scalar, Body::Dim> center;
+			return spatial::Box<Scalar, Body::Dim>(center, extent);
+		}
+
+		TreeSimulationEngine(config::Config cfg, config::Units& units, integration::IntegrationMethod<Body> intm, mass_distribution::MassDistribution<Body> mdist): 
+				integration_(intm), 
+				graphics_(cfg, units), 
+				bodies(mdist(cfg)),
+				bbox(init_bbox(cfg))
+		{
+			plot_energy_ = cfg.get("simulation.plots.energy").has_value();
+
+			G = units.G();
+			theta = cfg.get_or_fail<double>("simulation.engine.theta");
+			eps = cfg.get_or_fail<double>("simulation.engine.eps");
+
+			dt = cfg.get_or_fail<double>("simulation.integration.dt");
+
+			setup();
+		}
+
+		void setup() {
 			TreeType tree = build_tree();
 
 			for (auto& body : bodies) {
 				auto [acc, _] = traverse(body, &tree.root());
-				policy_.velocity_initialization(body, acc);
+				velocity_initialization(body, acc);
 			}
 
 			// Centroidal coordinates
-			typename Policy::Vector vel_mean;
+			Vector vel_mean;
 			for (auto&& body : bodies) {
 				vel_mean += body.vel;
 			}
@@ -133,27 +229,19 @@ namespace simulation {
 		bool step() {
 			TreeType tree = build_tree();
 
-			graphics_.show(time, policy_, tree);
-			if (graphics_.poll_close()) {
-				return false;
-			}
-
-			std::vector<typename Policy::Vector> accelerations;
-			typename Policy::NumType pot_energy = 0.;
+			// Calculate accelerations
+			std::vector<Vector> accelerations;
+			Scalar pot_energy = 0.;
 			for (auto&& body : bodies) {
 				auto [acc, pot] = traverse(body, &tree.root());
 				pot_energy += pot;
 				accelerations.push_back(acc);
 			}
 
-			for (std::size_t i = 0; i < bodies.size(); ++i) {
-				policy_.integration(policy_, bodies[i], accelerations[i]);
-			}
+			// Do graphics
+			if (plot_energy_) {
+				Scalar kin_energy = 0.;
 
-			time += policy_.dt;
-
-			typename Policy::NumType kin_energy = 0.;
-			if (policy_.plot_energy) {
 				for (std::size_t i = 0; i < bodies.size(); ++i) {
 					kin_energy += 0.5 * bodies[i].mass * bodies[i].vel.norm_squared();
 				}
@@ -161,8 +249,20 @@ namespace simulation {
 				stats.kin_energy.push_back(kin_energy);
 				stats.pot_energy.push_back(pot_energy);
 
-				graphics_.plot(policy_, stats);
+				graphics_.plot(stats);
 			}
+			
+			graphics_.show(time, tree);
+
+			if (graphics_.poll_close()) {
+				return false;
+			}
+
+			// Integrate
+			for (std::size_t i = 0; i < bodies.size(); ++i) {
+				integration_(bodies[i], dt, accelerations[i]);
+			}
+			time += dt;
 
 			return true;
 		}

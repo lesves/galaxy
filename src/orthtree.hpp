@@ -8,8 +8,10 @@
 namespace orthtree {
 	struct EmptyVal {};
 
+	template<typename Point>
 	class OrthTreeDefaultPolicy {
 	public:
+		using Item = Point;
 		using GetPoint = std::identity;
 		using AccumType = EmptyVal;
 
@@ -21,7 +23,7 @@ namespace orthtree {
 		OrthTreeDefaultPolicy(std::size_t node_capacity) : node_capacity(node_capacity) {}
 	};
 
-	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy>
+	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy<spatial::Point<T, Dim>>>
 	struct TNode {
 		const Policy& policy;
 
@@ -89,8 +91,11 @@ namespace orthtree {
 
 		bool insert(const T& value) {
 			static constexpr typename Policy::GetPoint get_point;
+			auto point = get_point(value);
 
-			if (!bbox.contains(get_point(value))) {
+			assert(!point.has_nan());
+
+			if (!bbox.contains(point)) {
 				return false;
 			}
 
@@ -137,7 +142,7 @@ namespace orthtree {
 		}
 	};
 
-	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy>
+	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy<spatial::Point<T, Dim>>>
 	class OrthTree {
 	private:
 		const Policy& policy_;
@@ -166,10 +171,10 @@ namespace orthtree {
 		}
 	};
 
-	template<typename T, typename P>
+	template<typename T, typename P = OrthTreeDefaultPolicy<spatial::Point<T, 2>>>
 	using QuadTree = OrthTree<T, 2, P>;
 
-	template<typename T, typename P>
+	template<typename T, typename P = OrthTreeDefaultPolicy<spatial::Point<T, 3>>>
 	using OctTree = OrthTree<T, 3, P>;
 }
 

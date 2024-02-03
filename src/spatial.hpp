@@ -101,6 +101,15 @@ namespace spatial {
 		T norm() const {
 			return std::sqrt(norm_squared());
 		}
+
+		bool has_nan() const {
+			for (std::size_t d = 0; d < D; ++d) {
+				if (std::isnan(components_[d])) {
+					return true;
+				}
+			}
+			return false;
+		}
 	};
 
 	template<typename T, Dimension D>
