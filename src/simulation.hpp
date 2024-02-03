@@ -6,6 +6,7 @@
 #include "orthtree.hpp"
 #include "spatial.hpp"
 #include "config.hpp"
+#include "plots.hpp"
 #include <utility>
 
 #include <numbers>
@@ -45,12 +46,6 @@ namespace simulation {
 
 	template<typename NumType, bool store_acc = false>
 	using Body2D = Body<NumType, 2, store_acc>;
-
-	template<typename Scalar>
-	struct Stats {
-		std::vector<Scalar> kin_energy;
-		std::vector<Scalar> pot_energy;
-	};
 
 	template<typename Body, typename Graphics>
 	class TreeSimulationEngine {
@@ -177,7 +172,7 @@ namespace simulation {
 		Scalar eps;
 		Scalar G;
 
-		Stats<Scalar> stats;
+		plots::EnergyStatsPlot energy;
 
 		spatial::Box<Scalar, Body::Dim> init_bbox(config::Config cfg) {
 			config::Config extent_ = cfg.get_or_fail("simulation.size.extent");
@@ -191,7 +186,8 @@ namespace simulation {
 				integration_(intm), 
 				graphics_(cfg, units), 
 				bodies(mdist(cfg)),
-				bbox(init_bbox(cfg))
+				bbox(init_bbox(cfg)),
+				energy(cfg)
 		{
 			plot_energy_ = cfg.get("simulation.plots.energy").has_value();
 
@@ -246,10 +242,8 @@ namespace simulation {
 					kin_energy += 0.5 * bodies[i].mass * bodies[i].vel.norm_squared();
 				}
 
-				stats.kin_energy.push_back(kin_energy);
-				stats.pot_energy.push_back(pot_energy);
-
-				graphics_.plot(stats);
+				energy.log(kin_energy, pot_energy);
+				energy.show();
 			}
 			
 			graphics_.show(time, tree);

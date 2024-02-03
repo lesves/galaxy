@@ -16,7 +16,7 @@ extent = { x = 200, y = 200 }
 type = "simple_exponential"
 N = 1000
 total_mass = 1E11
-lambda = 0.05 # Exponential parameter
+lambda = 0.05 # Exponential distribution parameter
 
 [simulation.engine]
 type = "tree"
@@ -27,8 +27,8 @@ theta = 0.2 # Tree approximation parameter
 type = "leapfrog"
 dt = 1.0
 
-[simulation.plots.energy]
-size = { height = 200, width = 500 }
-
 [simulation.video]
 scale = 2
+
+[simulation.plots.energy]
+size = { height = 200, width = 500 }

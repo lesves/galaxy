@@ -4,20 +4,12 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <iomanip>
-#include <sstream>
 #include "orthtree.hpp"
 #include "config.hpp"
+#include "utils.hpp"
 
 
 namespace tree_graphics {
-	template<typename F>
-	std::string formatf(F num, std::size_t prec) {
-		std::stringstream stream;
-		stream << std::fixed << std::setprecision(prec) << num;
-		return stream.str();
-	}
-
 	class Graphics2D {
 	private:
 		double extent_x;
@@ -145,33 +137,6 @@ namespace tree_graphics {
 
 		bool poll_close() {
 			return cv::pollKey() == 'x';
-		}
-
-		template<typename Stats>
-		void plot(const Stats& stats) {
-			if (stats.kin_energy.size() < 2) {
-				return;
-			}
-
-			cv::Mat plot(plot_height, plot_width, CV_8UC3, cv::Scalar(0, 0, 0));
-
-			cv::line(plot, cv::Point(0, plot_height/2), cv::Point(plot_width, plot_height/2), cv::Scalar(0, 255, 0));
-
-			auto base = stats.kin_energy[0] + stats.pot_energy[0];
-
-			auto end = stats.kin_energy.size();
-			auto start = end >= plot_width ? end-plot_width : 0;
-
-			for (std::size_t i = 1; i < (end >= plot_width ? plot_width : end); ++i) {
-				cv::line(
-					plot, 
-					cv::Point(i-1, plot_height - (stats.kin_energy[start+i-1] + stats.pot_energy[start+i-1])/(base*2)*plot_height), 
-					cv::Point(i,   plot_height - (stats.kin_energy[start+i] + stats.pot_energy[start+i])/(base*2)*plot_height), 
-					cv::Scalar(255, 255, 255)
-				);
-			}
-
-			cv::imshow("energy", plot);
 		}
 	};
 }
