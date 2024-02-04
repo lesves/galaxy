@@ -149,9 +149,18 @@ namespace orthtree {
 		TNode<T, Dim, Policy> root_;
 
 	public:
-		OrthTree(const Policy& policy, const spatial::Box<typename Policy::NumType, Dim>& bbox) : policy_(policy), root_(TNode<T, Dim, Policy>(policy_, bbox)) {};
-
 		using Node = TNode<T, Dim, Policy>;
+
+		OrthTree(const Policy& policy, const spatial::Box<typename Policy::NumType, Dim>& bbox) : policy_(policy), root_(TNode<T, Dim, Policy>(policy_, bbox)) {}
+		OrthTree(
+			const Policy& policy, 
+			const spatial::Box<typename Policy::NumType, Dim>& bbox,
+			const std::vector<T>& elements
+		) : OrthTree(policy, bbox) {
+			for (auto&& el : elements) {
+				insert(el);
+			}
+		}
 
 		bool insert(const T& value) {
 			return root_.insert(value);

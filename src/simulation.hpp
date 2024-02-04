@@ -8,8 +8,8 @@
 #include "config.hpp"
 #include "plots.hpp"
 #include <utility>
-
-#include <numbers>
+//#include <algorithm>
+//#include <execution>
 
 
 namespace simulation {
@@ -47,13 +47,17 @@ namespace simulation {
 	template<typename NumType, bool store_acc = false>
 	using Body2D = Body<NumType, 2, store_acc>;
 
+	template<typename NumType, bool store_acc = false>
+	using Body3D = Body<NumType, 3, store_acc>;
+
 	template<typename Body, typename Graphics>
 	class TreeSimulationEngine {
-	private:
+	public:
 		using Scalar = typename Body::Scalar;
 		using Vector = typename Body::Vector;
 		using Point = typename Body::Point;
-
+		
+	private:
 		struct TreePolicy {
 			using Item = Body;
 			using NumType = typename Body::Scalar;
@@ -87,24 +91,13 @@ namespace simulation {
 
 		bool plot_energy_;
 
-		// TODO: Move as constructor to OrthTree
-		TreeType build_tree() {
-			TreeType tree(tree_policy, bbox);
-
-			for (auto&& body : bodies) {
-				tree.insert(body);
-			}
-
-			return tree;
-		}
-
 		std::pair<Vector, Scalar> interact(const Body& body, const Point& other_pos, Scalar other_mass) const {
 			auto diff = body.pos - other_pos;
 
 			auto dist = diff.norm();
-			auto smoothed = sqrt(dist*dist + eps*eps);
+			auto smoothed = std::sqrt(dist*dist + eps*eps);
 
-			auto acc = -G * other_mass * diff / std::pow(smoothed, 3);
+			auto acc = -G * other_mass * diff / std::pow(smoothed, (Scalar)3);
 			auto pot = -G * body.mass * other_mass / smoothed / 2;
 
 			return std::make_pair(acc, pot);
@@ -135,6 +128,19 @@ namespace simulation {
 						res_acc += acc;
 						res_pot += pot;
 					}
+					/*std::vector<std::pair<Vector, Scalar>> res(node->children.value().size());
+					std::transform(
+						std::execution::par, 
+						node->children.value().begin(), node->children.value().end(),
+						res.begin(),
+						[this, &body](auto&& child) {
+							return traverse(body, child.get());
+						}
+					);
+					for (auto&& [acc, pot] : res) {
+						res_acc += acc;
+						res_pot += pot;
+					}*/
 				}
 			}
 
@@ -155,7 +161,7 @@ namespace simulation {
 			Scalar a_r = cosphi * a;
 			if (a_r < 0.) a_r = 0.;
 
-			Scalar v_t = sqrt(a_r * r);
+			Scalar v_t = std::sqrt(a_r * r);
 			Scalar v_r = 0;
 
 			body.vel[0] = v_t*std::cos(theta - std::numbers::pi/2) + v_r*std::cos(theta);
@@ -175,33 +181,32 @@ namespace simulation {
 		plots::EnergyStatsPlot energy;
 
 		spatial::Box<Scalar, Body::Dim> init_bbox(config::Config cfg) {
-			config::Config extent_ = cfg.get_or_fail("simulation.size.extent");
-			std::array<Scalar, 2> extent = { extent_.get_or_fail<Scalar>("x"), extent_.get_or_fail<Scalar>("y") };
+			std::array<Scalar, Body::Dim> extent = config::get_coords_or_fail<Scalar, Body::Dim>()(cfg, "simulation.size.extent");
 
 			spatial::Point<Scalar, Body::Dim> center;
 			return spatial::Box<Scalar, Body::Dim>(center, extent);
 		}
 
-		TreeSimulationEngine(config::Config cfg, config::Units& units, integration::IntegrationMethod<Body> intm, mass_distribution::MassDistribution<Body> mdist): 
+		TreeSimulationEngine(config::Config cfg, const config::Units& units, integration::IntegrationMethod<Body> intm, mass_distribution::MassDistribution<Body> mdist): 
 				integration_(intm), 
 				graphics_(cfg, units), 
-				bodies(mdist(cfg)),
+				bodies(mdist(cfg.get_or_fail("simulation.mass_distribution"))),
 				bbox(init_bbox(cfg)),
 				energy(cfg)
 		{
-			plot_energy_ = cfg.get("simulation.plots.energy").has_value();
+			plot_energy_ = cfg.get<bool>("simulation.plots.energy.enable").value_or(true);
 
 			G = units.G();
-			theta = cfg.get_or_fail<double>("simulation.engine.theta");
-			eps = cfg.get_or_fail<double>("simulation.engine.eps");
+			theta = cfg.get_or_fail<Scalar>("simulation.engine.theta");
+			eps = cfg.get_or_fail<Scalar>("simulation.engine.eps");
 
-			dt = cfg.get_or_fail<double>("simulation.integration.dt");
+			dt = cfg.get_or_fail<Scalar>("simulation.integration.dt");
 
 			setup();
 		}
 
 		void setup() {
-			TreeType tree = build_tree();
+			TreeType tree(tree_policy, bbox, bodies);
 
 			for (auto& body : bodies) {
 				auto [acc, _] = traverse(body, &tree.root());
@@ -223,7 +228,7 @@ namespace simulation {
 		}
 
 		bool step() {
-			TreeType tree = build_tree();
+			TreeType tree(tree_policy, bbox, bodies);
 
 			// Calculate accelerations
 			std::vector<Vector> accelerations;
@@ -246,7 +251,7 @@ namespace simulation {
 				energy.show();
 			}
 			
-			graphics_.show(time, tree);
+			graphics_.show(time, this, tree);
 
 			if (graphics_.poll_close()) {
 				return false;

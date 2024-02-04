@@ -10,7 +10,7 @@ time = { val = 1.0, unit = "Myear" }
 mass = { val = 1.0, unit = "mass_sun" }
 
 [simulation.size]
-extent = { x = 200, y = 200 }
+extent = { x = 200, y = 200, z = 200 }
 
 [simulation.mass_distribution]
 type = "simple_exponential"
@@ -28,7 +28,8 @@ type = "leapfrog"
 dt = 1.0
 
 [simulation.video]
-scale = 2
+scale = 3
 
 [simulation.plots.energy]
+enable = true
 size = { height = 200, width = 500 }

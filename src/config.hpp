@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <ranges>
 #include <cmath>
+#include "spatial.hpp"
 
 
 namespace config {
@@ -58,6 +59,30 @@ namespace config {
 			if (!opt.has_value())
 				throw config::configuration_error("Required key '" + path + "' not found in configuration.");
 			return *opt;
+		}
+	};
+
+	template<typename T, spatial::Dimension D>
+	struct get_coords_or_fail;
+
+	template<typename T>
+	struct get_coords_or_fail<T, 2> {
+		std::array<T, 2> operator()(config::Config cfg, const std::string& path) {
+			return {
+				cfg.get_or_fail<T>(path + ".x"),
+				cfg.get_or_fail<T>(path + ".y")
+			};
+		}
+	};
+
+	template<typename T>
+	struct get_coords_or_fail<T, 3> {
+		std::array<T, 3> operator()(config::Config cfg, const std::string& path) {
+			return {
+				cfg.get_or_fail<T>(path + ".x"),
+				cfg.get_or_fail<T>(path + ".y"),
+				cfg.get_or_fail<T>(path + ".z")
+			};
 		}
 	};
 
@@ -199,7 +224,7 @@ namespace config {
 			return unit(q).si_value;
 		}
 
-		double G() {
+		double G() const {
 			auto dist_unit = base_unit(Quantity::DIST);
 			auto time_unit = base_unit(Quantity::TIME);
 			auto mass_unit = base_unit(Quantity::MASS);

@@ -1,5 +1,5 @@
-#ifndef GALAXY_TREE_GRAPHICS_H
-#define GALAXY_TREE_GRAPHICS_H
+#ifndef GALAXY_TREE_GRAPHICS_2D_H
+#define GALAXY_TREE_GRAPHICS_2D_H
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -9,7 +9,7 @@
 #include "utils.hpp"
 
 
-namespace tree_graphics {
+namespace graphics {
 	class Graphics2D {
 	private:
 		double extent_x;
@@ -31,11 +31,8 @@ namespace tree_graphics {
 
 		Graphics2D(config::Config cfg, const config::Units& units): units(units) {
 			extent_x = cfg.get_or_fail<double>("simulation.size.extent.x");
-			extent_y = cfg.get_or_fail<double>("simulation.size.extent.x");
+			extent_y = cfg.get_or_fail<double>("simulation.size.extent.y");
 			scale = cfg.get_or_fail<double>("simulation.video.scale");
-
-			plot_height = cfg.get_or_fail<std::size_t>("simulation.plots.energy.size.height");
-			plot_width = cfg.get_or_fail<std::size_t>("simulation.plots.energy.size.width");
 		}
 
 		template<typename TreePolicy>
@@ -124,8 +121,8 @@ namespace tree_graphics {
 			cv::line(img, cv::Point(scale_end.x, scale_end.y-3), cv::Point(scale_end.x, scale_end.y+3), cv::Scalar(255, 255, 255));
 		}
 
-		template<typename TreePolicy>
-		void show(typename TreePolicy::Item::Scalar time, const orthtree::QuadTree<typename TreePolicy::Item, TreePolicy>& qt) {
+		template<typename Engine, typename TreePolicy>
+		void show(typename TreePolicy::Item::Scalar time, const Engine* e, const orthtree::QuadTree<typename TreePolicy::Item, TreePolicy>& qt) {
 			cv::Mat img(output_height(), output_width(), CV_8UC3, cv::Scalar(0, 0, 0));
 			draw_quadtree(img, qt);
 
