@@ -33,14 +33,6 @@ namespace config {
 			tbl_ = tbl.as_table();
 		}
 
-		std::optional<Config> get(const std::string& path) {
-			auto c = tbl_->at_path(path);
-			if (!c.is_table()) {
-				return {};
-			}
-			return Config(c.as_table());
-		}
-
 		template<typename T>
 		std::optional<T> get(const std::string& path) {
 			return tbl_->at_path(path).value<T>();
@@ -54,11 +46,36 @@ namespace config {
 			return *opt;
 		}
 
+		std::optional<Config> get(const std::string& path) {
+			auto c = tbl_->at_path(path);
+			if (!c.is_table()) {
+				return {};
+			}
+			return Config(c.as_table());
+		}
+
 		Config get_or_fail(const std::string& path) {
 			std::optional<Config> opt = get(path);
 			if (!opt.has_value())
 				throw config::configuration_error("Required key '" + path + "' not found in configuration.");
 			return *opt;
+		}
+
+		std::vector<Config> get_configs(const std::string& path) {
+			std::vector<Config> res;
+
+			auto c = tbl_->at_path(path);
+			if (!c.is_array()) {
+				throw config::configuration_error("Invalid configuration at '" + path + "'.");
+			}
+
+			for (auto it = c.as_array()->begin(); it != c.as_array()->end(); ++it) {
+				if (!it->is_table()) {
+					throw config::configuration_error("Invalid configuration at '" + path + "'.");
+				}
+				res.emplace_back<Config>(it->as_table());
+			}
+			return res;
 		}
 	};
 

@@ -147,27 +147,6 @@ namespace simulation {
 			return std::make_pair(res_acc, res_pot);
 		}
 
-		// TODO: Generalize
-		void velocity_initialization(Body& body, const typename Body::Vector& acc) {
-			using Scalar = typename Body::Scalar;
-
-			Scalar a = acc.norm();
-
-			Scalar r = body.pos.norm();
-			Scalar theta = std::atan2(body.pos[1], body.pos[0]);
-
-			auto tmp = body.pos * acc / r / a;
-			Scalar cosphi = -tmp[0]-tmp[1];
-			Scalar a_r = cosphi * a;
-			if (a_r < 0.) a_r = 0.;
-
-			Scalar v_t = std::sqrt(a_r * r);
-			Scalar v_r = 0;
-
-			body.vel[0] = v_t*std::cos(theta - std::numbers::pi/2) + v_r*std::cos(theta);
-			body.vel[1] = v_t*std::sin(theta - std::numbers::pi/2) + v_r*std::sin(theta);
-		}
-
 	public:
 		spatial::Box<Scalar, Body::Dim> bbox;
 		std::vector<Body> bodies;
@@ -187,10 +166,9 @@ namespace simulation {
 			return spatial::Box<Scalar, Body::Dim>(center, extent);
 		}
 
-		TreeSimulationEngine(config::Config cfg, const config::Units& units, integration::IntegrationMethod<Body> intm, mass_distribution::MassDistribution<Body> mdist): 
+		TreeSimulationEngine(config::Config cfg, const config::Units& units, integration::IntegrationMethod<Body> intm, mass_distribution::MassDistribution<Body, TreeSimulationEngine<Body, Graphics>> mdist): 
 				integration_(intm), 
-				graphics_(cfg, units), 
-				bodies(mdist(cfg.get_or_fail("simulation.mass_distribution"))),
+				graphics_(cfg, units),
 				bbox(init_bbox(cfg)),
 				energy(cfg)
 		{
@@ -202,21 +180,45 @@ namespace simulation {
 
 			dt = cfg.get_or_fail<Scalar>("simulation.integration.dt");
 
+			mdist(cfg.get_or_fail("simulation.mass_distribution"), this);
+
 			setup();
 		}
 
-		void setup() {
-			TreeType tree(tree_policy, bbox, bodies);
+		static void velocity_initialization(Body& body, const Vector& acc) {
+			Scalar a = acc.norm();
 
-			for (auto& body : bodies) {
-				auto [acc, _] = traverse(body, &tree.root());
-				velocity_initialization(body, acc);
+			Scalar r = body.pos.norm();
+			Scalar theta = std::atan2(body.pos[1], body.pos[0]);
+
+			auto tmp = body.pos * acc / r / a;
+			Scalar cosphi = -tmp[0]-tmp[1];
+			Scalar a_r = cosphi * a;
+			if (a_r < 0.) a_r = 0.;
+
+			Scalar v_t = std::sqrt(a_r * r);
+			Scalar v_r = 0;
+
+			body.vel[0] = v_t*std::cos(theta - std::numbers::pi/2) + v_r*std::cos(theta);
+			body.vel[1] = v_t*std::sin(theta - std::numbers::pi/2) + v_r*std::sin(theta);
+		}
+
+		void init_vels(typename std::vector<Body>::iterator begin, typename std::vector<Body>::iterator end) {
+			TreeType tree(tree_policy, bbox, begin, end);
+
+			for (auto it = begin; it != end; ++it) {
+				auto [acc, _] = traverse(*it, &tree.root());
+				velocity_initialization(*it, acc);
 			}
+		}
+
+		void setup() {
+			/*TreeType tree(tree_policy, bbox, bodies);
 
 			// Centroidal coordinates
 			Vector vel_mean;
 			for (auto&& body : bodies) {
-				vel_mean += body.vel;
+				vel_mean += body.vel*body.mass;
 			}
 			vel_mean /= tree.root().accum_value.total_mass;
 			auto pos_mean = tree.root().accum_value.center_of_mass();
@@ -224,7 +226,7 @@ namespace simulation {
 			for (auto& body : bodies) {
 				body.pos -= pos_mean;
 				body.vel -= vel_mean;
-			}
+			}*/
 		}
 
 		bool step() {
@@ -250,7 +252,7 @@ namespace simulation {
 				energy.log(kin_energy, pot_energy);
 				energy.show();
 			}
-			
+
 			graphics_.show(time, this, tree);
 
 			if (graphics_.poll_close()) {

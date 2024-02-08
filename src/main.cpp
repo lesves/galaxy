@@ -14,7 +14,7 @@ void run(config::Config cfg, const config::Units& units) {
 	using Engine = simulation::TreeSimulationEngine<Body, Graphics>;
 
 	auto intm = integration::get<Body>(cfg.get_or_fail("simulation.integration"));
-	auto mdist = mass_distribution::get<Body>(cfg.get_or_fail("simulation.mass_distribution"));
+	auto mdist = mass_distribution::get<Body, Engine>(cfg.get_or_fail("simulation.mass_distribution"));
 
 	Engine sim(cfg, units, intm, mdist);
 	for (;;) {

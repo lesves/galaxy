@@ -14,25 +14,39 @@ namespace graphics {
 	private:
 		double extent_x;
 		double extent_y;
-		double scale;
-		std::size_t plot_height;
-		std::size_t plot_width;
+
+		double width;
+		double height;
+		double point_size;
 
 		const config::Units& units;
 
 	public:
 		double output_width() {
-			return extent_x*2*scale;
+			return width;
 		}
 
 		double output_height() {
-			return extent_y*2*scale;
+			return height;
+		}
+
+		double scale_x() {
+			return width/(extent_x*2.);
+		}
+
+		double scale_y() {
+			return height/(extent_y*2.);
 		}
 
 		Graphics2D(config::Config cfg, const config::Units& units): units(units) {
 			extent_x = cfg.get_or_fail<double>("simulation.size.extent.x");
 			extent_y = cfg.get_or_fail<double>("simulation.size.extent.y");
-			scale = cfg.get_or_fail<double>("simulation.video.scale");
+
+			auto scale = cfg.get<double>("simulation.video.size.scale").value_or(1.);
+			height = cfg.get<double>("simulation.video.size.height").value_or(extent_x*2.*scale);
+			width = cfg.get<double>("simulation.video.size.width").value_or(extent_y*2.*scale);
+
+			point_size = cfg.get_or_fail<double>("simulation.video.point_size");
 		}
 
 		template<typename TreePolicy>
@@ -47,11 +61,10 @@ namespace graphics {
 			auto end_x = cx + ex + extent_x;
 			auto end_y = cy + ey + extent_y;
 
-			//std::cout << "nc: " << cx << " " << cy << " cnt: " << node->accum_value.count << "\n";
 			cv::rectangle(
 				img, 
-				cv::Point(start_x*scale, start_y*scale), 
-				cv::Point(end_x*scale, end_y*scale), 
+				cv::Point(start_x*scale_x(), start_y*scale_y()), 
+				cv::Point(end_x*scale_x(), end_y*scale_y()), 
 				cv::Scalar(100, 50, 50), 
 				1
 			);
@@ -68,10 +81,10 @@ namespace graphics {
 					cv::circle(
 						img, 
 						cv::Point(
-							(point[0] + extent_x) * scale, 
-							(point[1] + extent_y) * scale
+							(point[0] + extent_x) * scale_x(), 
+							(point[1] + extent_y) * scale_y()
 						), 
-						2, 
+						point_size, 
 						cv::Scalar(255, 255, 255), 
 						-1
 					);
@@ -102,7 +115,7 @@ namespace graphics {
 
 			/* Draw scale */
 			auto scale_text = formatf(dist_unit.value*10, 2) + " " + dist_unit.unit;
-			std::size_t scale_length = 10 * scale;
+			std::size_t scale_length = 10 * scale_x();
 
 			auto size = cv::getTextSize(scale_text, cv::FONT_HERSHEY_DUPLEX, 0.5, 1, nullptr);
 			cv::putText(img,

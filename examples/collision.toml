@@ -2,7 +2,7 @@
 G0 = 6.67430E-11 # m³/(kg·s²)
 
 [simulation]
-dim = 2
+dim = 3
 
 [simulation.units]
 dist = { val = 0.1, unit = "kpc" }
@@ -10,18 +10,30 @@ time = { val = 1.0, unit = "Myear" }
 mass = { val = 1.0, unit = "mass_sun" }
 
 [simulation.size]
-extent = { x = 100, y = 100, z = 10 }
+extent = { x = 250, y = 250, z = 200 }
 
 [simulation.mass_distribution]
+type = "composite"
+
+[[simulation.mass_distribution.composite]]
 type = "simple_exponential"
+offset = { x = 100, y = 100, z = 100 }
+rotation = { x = 30, y = 0, z = 0 }
 N = 2000
 total_mass = 1E11
-lambda = 0.06
+lambda = 0.1
+
+[[simulation.mass_distribution.composite]]
+type = "simple_exponential"
+offset = { x = -100, y = -100 }
+N = 2000
+total_mass = 1E11
+lambda = 0.1
 
 [simulation.engine]
 type = "tree"
 eps = 2.5 # Plummer potential distance parameter
-theta = 0.2 # Tree approximation parameter
+theta = 0.3 # Tree approximation parameter
 
 [simulation.integration]
 type = "leapfrog"
@@ -29,8 +41,7 @@ dt = 1.0
 
 [simulation.video]
 point_size = 2
-size.scale = 3
 
 [simulation.plots.energy]
 enable = true
-size = { width = 500, height = 200 }
+size = { height = 200, width = 500 }
