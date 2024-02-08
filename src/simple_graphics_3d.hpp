@@ -32,10 +32,15 @@ namespace graphics {
 
 		const config::Units& units;
 
+		bool use_video;
+		video::Writer writer;
+
+		config::Config cfg;
+
 		cv::viz::Viz3d viz;
 
 	public:
-		Graphics3D(config::Config cfg, const config::Units& units): units(units), viz(cv::viz::Viz3d("galaxy")) {
+		Graphics3D(config::Config cfg, const config::Units& units): cfg(cfg), units(units), viz(cv::viz::Viz3d("galaxy")) {
 			extent_x = cfg.get_or_fail<double>("simulation.size.extent.x");
 			extent_y = cfg.get_or_fail<double>("simulation.size.extent.y");
 			extent_z = cfg.get_or_fail<double>("simulation.size.extent.z");
@@ -43,6 +48,8 @@ namespace graphics {
 			point_size = cfg.get_or_fail<double>("simulation.video.point_size");
 
 			show_bbox = cfg.get<bool>("simulation.video.show_bbox").value_or(true);
+
+			use_video = cfg.get("simulation.video.output").has_value();
 		}
 
 		template<typename Scalar>
@@ -100,6 +107,16 @@ namespace graphics {
 			viz.setRenderingProperty("galaxy", cv::viz::POINT_SIZE, point_size);
 
 			viz.setBackgroundColor(cv::Scalar(0, 0, 0));
+
+			if (use_video) {
+				auto sc = viz.getScreenshot();
+
+				if (time == 0.) {
+					writer = video::Writer(cfg, sc.size[1], sc.size[0]);
+				}
+
+				writer.write(sc);
+			}
 
 			/* Display */
 			viz.spinOnce();

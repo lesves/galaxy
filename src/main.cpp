@@ -1,12 +1,25 @@
 #include <iostream>
 #include <vector>
+#include <csignal>
 #include "config.hpp"
+#include "video.hpp"
 #include "spatial.hpp"
 #include "simulation.hpp"
 #include "mass_distribution.hpp"
 #include "integration.hpp"
 #include "tree_graphics_2d.hpp"
 #include "simple_graphics_3d.hpp"
+
+
+namespace signals {
+	static volatile std::sig_atomic_t signal_status;
+	static volatile bool ok_status = true;
+
+	void signal_handler(int signal) {
+		signal_status = signal;
+		ok_status = false;
+	}
+}
 
 
 template<typename Body, typename Graphics>
@@ -17,16 +30,20 @@ void run(config::Config cfg, const config::Units& units) {
 	auto mdist = mass_distribution::get<Body, Engine>(cfg.get_or_fail("simulation.mass_distribution"));
 
 	Engine sim(cfg, units, intm, mdist);
-	for (;;) {
+
+	while(signals::ok_status) {
 		if (!sim.step()) {
 			break;
 		}
 	}
+	video::Writer::handle_exit();
 }
 
 
 int main(int argc, char** argv) {
 	try {
+		std::signal(SIGINT, signals::signal_handler);
+
 		std::vector<std::string> args(argv + 1, argv + argc);
 
 		auto mgr = config::ConfigurationManager(args.empty() ? "simulation.toml" : args[0]);

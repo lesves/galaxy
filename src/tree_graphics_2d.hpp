@@ -6,6 +6,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "orthtree.hpp"
 #include "config.hpp"
+#include "video.hpp"
 #include "utils.hpp"
 
 
@@ -21,15 +22,10 @@ namespace graphics {
 
 		const config::Units& units;
 
+		bool use_video;
+		video::Writer writer;
+
 	public:
-		double output_width() {
-			return width;
-		}
-
-		double output_height() {
-			return height;
-		}
-
 		double scale_x() {
 			return width/(extent_x*2.);
 		}
@@ -43,10 +39,21 @@ namespace graphics {
 			extent_y = cfg.get_or_fail<double>("simulation.size.extent.y");
 
 			auto scale = cfg.get<double>("simulation.video.size.scale").value_or(1.);
-			height = cfg.get<double>("simulation.video.size.height").value_or(extent_x*2.*scale);
-			width = cfg.get<double>("simulation.video.size.width").value_or(extent_y*2.*scale);
+			width = cfg.get<double>("simulation.video.size.width").value_or(extent_x*2.*scale);
+			height = cfg.get<double>("simulation.video.size.height").value_or(extent_y*2.*scale);
+
+			use_video = cfg.get("simulation.video.output").has_value();
+			if (use_video) {
+				writer = video::Writer(cfg, width, height);
+			}
 
 			point_size = cfg.get_or_fail<double>("simulation.video.point_size");
+
+			cv::namedWindow("galaxy", cv::WINDOW_NORMAL);
+		}
+
+		~Graphics2D() {
+			cv::destroyWindow("galaxy");
 		}
 
 		template<typename TreePolicy>
@@ -136,13 +143,21 @@ namespace graphics {
 
 		template<typename Engine, typename TreePolicy>
 		void show(typename TreePolicy::Item::Scalar time, const Engine* e, const orthtree::QuadTree<typename TreePolicy::Item, TreePolicy>& qt) {
-			cv::Mat img(output_height(), output_width(), CV_8UC3, cv::Scalar(0, 0, 0));
+			cv::Mat img(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
 			draw_quadtree(img, qt);
 
 			draw_graphics(time, img);
 
 			/* Display */
 			cv::imshow("galaxy", img);
+
+			if (time == 0.) {
+				cv::resizeWindow("galaxy", width, height);
+			}
+
+			if (use_video) {
+				writer.write(img);
+			}
 		}
 
 		bool poll_close() {
