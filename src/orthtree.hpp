@@ -24,21 +24,14 @@ namespace orthtree {
 	};
 
 	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy<spatial::Point<T, Dim>>>
-	struct TNode {
+	class OrthTree;
+
+	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy<spatial::Point<T, Dim>>>
+	class TNode {
+	private:
+		friend class OrthTree<T, Dim, Policy>;
+
 		const Policy& policy;
-
-		std::vector<T> data;
-		typename Policy::AccumType accum_value;
-
-		std::optional<std::array<std::unique_ptr<TNode<T, Dim, Policy>>, 1 << Dim>> children;
-
-		spatial::Box<typename Policy::NumType, Dim> bbox;
-
-		TNode(const Policy& policy, const spatial::Box<typename Policy::NumType, Dim>& bbox) : policy(policy), bbox(bbox) {};
-
-		bool is_leaf() const {
-			return !children.has_value();
-		}
 
 		bool subdivide() {
 			//std::cout << "subdivide\n";
@@ -129,20 +122,20 @@ namespace orthtree {
 			}
 		}
 
-		template<typename LeafF, typename InternalF>
-		void traverse(const LeafF& leaf, const InternalF& internal) {
-			if (is_leaf()) {
-				leaf(data, bbox);
-			} else {
-				internal(accum_value, bbox);
-				for (auto&& child : *children) {
-					child.traverse(leaf, internal);
-				}
-			}
+	public:
+		std::vector<T> data;
+		typename Policy::AccumType accum_value;
+		std::optional<std::array<std::unique_ptr<TNode<T, Dim, Policy>>, 1 << Dim>> children;
+		spatial::Box<typename Policy::NumType, Dim> bbox;
+
+		TNode(const Policy& policy, const spatial::Box<typename Policy::NumType, Dim>& bbox) : policy(policy), bbox(bbox) {};
+
+		bool is_leaf() const {
+			return !children.has_value();
 		}
 	};
 
-	template<typename T, spatial::Dimension Dim, typename Policy = OrthTreeDefaultPolicy<spatial::Point<T, Dim>>>
+	template<typename T, spatial::Dimension Dim, typename Policy>
 	class OrthTree {
 	private:
 		const Policy& policy_;
@@ -181,11 +174,6 @@ namespace orthtree {
 
 		TNode<T, Dim, Policy>& root() {
 			return root_;
-		}
-
-		template<typename LeafF, typename InternalF>
-		void traverse(const LeafF& leaf, const InternalF& internal) {
-			root_.traverse(internal, leaf);
 		}
 	};
 
