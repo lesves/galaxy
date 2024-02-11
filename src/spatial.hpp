@@ -282,7 +282,7 @@ namespace spatial {
 
 	template<typename T>
 	inline Matrix<T, 3, 3> rotation(T x, T y, T z) {
-		return rotation_x(x)*rotation_y(y)*rotation_z(z);
+		return rotation_z(z)*rotation_y(y)*rotation_x(x);
 	}
 }
 

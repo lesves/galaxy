@@ -180,8 +180,6 @@ namespace simulation {
 			dt = cfg.get_or_fail<Scalar>("simulation.integration.dt");
 
 			mdist(cfg.get_or_fail("simulation.mass_distribution"), this);
-
-			setup();
 		}
 
 		static void velocity_initialization(Body& body, const Vector& acc) {
@@ -209,23 +207,6 @@ namespace simulation {
 				auto [acc, _] = traverse(*it, &tree.root());
 				velocity_initialization(*it, acc);
 			}
-		}
-
-		void setup() {
-			/*TreeType tree(tree_policy, bbox, bodies);
-
-			// Centroidal coordinates
-			Vector vel_mean;
-			for (auto&& body : bodies) {
-				vel_mean += body.vel*body.mass;
-			}
-			vel_mean /= tree.root().accum_value.total_mass;
-			auto pos_mean = tree.root().accum_value.center_of_mass();
-
-			for (auto& body : bodies) {
-				body.pos -= pos_mean;
-				body.vel -= vel_mean;
-			}*/
 		}
 
 		bool step() {

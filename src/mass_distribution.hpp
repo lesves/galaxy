@@ -28,9 +28,9 @@ namespace mass_distribution {
 
 			double rot_x = deg2rad(mcfg.get<double>("rotation.x").value_or(0.));
 			double rot_y = deg2rad(mcfg.get<double>("rotation.y").value_or(0.));
-			double rot_z = deg2rad(mcfg.get<double>("rotation.y").value_or(0.));
+			double rot_z = deg2rad(mcfg.get<double>("rotation.z").value_or(0.));
 
-			auto rmat = spatial::rotation_x(rot_x);//, rot_y, rot_z);
+			auto rmat = spatial::rotation(rot_x, rot_y, rot_z);
 			for (auto& body : bodies) {
 				body.pos = rmat*body.pos;
 				body.vel = rmat*body.vel;
