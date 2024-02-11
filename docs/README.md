@@ -18,6 +18,7 @@
         - bohužel o něco pomalejší
 - (Zatím) dvě základní integrační metody (eulerovská a leapfrog)
 - Možnosti konfigurace počátečních podmínek simulace
+- Konfigurační soubory v přehledném formátu TOML
 
 ### Použití
 ```sh
@@ -48,4 +49,5 @@ Při příštím `cmake --build .` se program zbuildí s OpenCV backendem.
 ### Obrázky a videa
 ![2D simulace s vizualizací quadtree](assets/quadtree.png "2D simulace s vizualizací quadtree")
 ![3D simulace kolize dvou jednoduchých spirálních galaxií](assets/collision.gif "3D simulace kolize dvou jednoduchých spirálních galaxií")
+![Grafy zachování energie](assets/energy.png "Grafy zachování energie")
 ![Jednoduchá simulace eliptické galaxie](assets/sphere.gif "Jednoduchá simulace eliptické galaxie")
