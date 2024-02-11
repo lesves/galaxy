@@ -11,9 +11,9 @@
 
 #include <algorithm>
 
-#include "orthtree.hpp"
-#include "config.hpp"
-#include "utils.hpp"
+#include "../../orthtree.hpp"
+#include "../../config.hpp"
+#include "../../utils.hpp"
 
 
 namespace graphics {
@@ -23,34 +23,17 @@ namespace graphics {
 		double extent_y;
 		double extent_z;
 
-		double height;
-		double width;
-
 		double point_size;
 
 		bool show_bbox;
 
+		config::Config cfg;
 		const config::Units& units;
 
 		bool use_video;
 		video::Writer writer;
 
-		config::Config cfg;
-
 		cv::viz::Viz3d viz;
-
-	public:
-		Graphics3D(config::Config cfg, const config::Units& units): cfg(cfg), units(units), viz(cv::viz::Viz3d("galaxy")) {
-			extent_x = cfg.get_or_fail<double>("simulation.size.extent.x");
-			extent_y = cfg.get_or_fail<double>("simulation.size.extent.y");
-			extent_z = cfg.get_or_fail<double>("simulation.size.extent.z");
-
-			point_size = cfg.get_or_fail<double>("simulation.video.point_size");
-
-			show_bbox = cfg.get<bool>("simulation.video.show_bbox").value_or(true);
-
-			use_video = cfg.get("simulation.video.output").has_value();
-		}
 
 		template<typename Scalar>
 		void draw_graphics(Scalar time, cv::Mat& img) {
@@ -85,6 +68,19 @@ namespace graphics {
 					viz.resetCamera();
 				}
 			}
+		}
+
+	public:
+		Graphics3D(config::Config cfg, const config::Units& units): cfg(cfg), units(units), viz(cv::viz::Viz3d("galaxy")) {
+			extent_x = cfg.get_or_fail<double>("simulation.size.extent.x");
+			extent_y = cfg.get_or_fail<double>("simulation.size.extent.y");
+			extent_z = cfg.get_or_fail<double>("simulation.size.extent.z");
+
+			point_size = cfg.get_or_fail<double>("simulation.video.point_size");
+
+			show_bbox = cfg.get<bool>("simulation.video.show_bbox").value_or(true);
+
+			use_video = cfg.get("simulation.video.output").has_value();
 		}
 
 		template<typename Engine, typename TreeType>

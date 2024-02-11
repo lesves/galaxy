@@ -4,10 +4,11 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include "orthtree.hpp"
-#include "config.hpp"
-#include "video.hpp"
-#include "utils.hpp"
+
+#include "../../orthtree.hpp"
+#include "../../config.hpp"
+#include "../../video.hpp"
+#include "../../utils.hpp"
 
 
 namespace graphics {
@@ -24,37 +25,6 @@ namespace graphics {
 
 		bool use_video;
 		video::Writer writer;
-
-	public:
-		double scale_x() {
-			return width/(extent_x*2.);
-		}
-
-		double scale_y() {
-			return height/(extent_y*2.);
-		}
-
-		Graphics2D(config::Config cfg, const config::Units& units): units(units) {
-			extent_x = cfg.get_or_fail<double>("simulation.size.extent.x");
-			extent_y = cfg.get_or_fail<double>("simulation.size.extent.y");
-
-			auto scale = cfg.get<double>("simulation.video.size.scale").value_or(1.);
-			width = cfg.get<double>("simulation.video.size.width").value_or(extent_x*2.*scale);
-			height = cfg.get<double>("simulation.video.size.height").value_or(extent_y*2.*scale);
-
-			use_video = cfg.get("simulation.video.output").has_value();
-			if (use_video) {
-				writer = video::Writer(cfg, width, height);
-			}
-
-			point_size = cfg.get_or_fail<double>("simulation.video.point_size");
-
-			cv::namedWindow("galaxy", cv::WINDOW_NORMAL);
-		}
-
-		~Graphics2D() {
-			cv::destroyWindow("galaxy");
-		}
 
 		template<typename TreePolicy>
 		void draw_quadtree_node(cv::Mat& img, const orthtree::TNode<typename TreePolicy::Item, 2, TreePolicy>* node) {
@@ -139,6 +109,37 @@ namespace graphics {
 			cv::line(img, scale_start, scale_end, cv::Scalar(255, 255, 255));
 			cv::line(img, cv::Point(scale_start.x, scale_start.y-3), cv::Point(scale_start.x, scale_start.y+3), cv::Scalar(255, 255, 255));
 			cv::line(img, cv::Point(scale_end.x, scale_end.y-3), cv::Point(scale_end.x, scale_end.y+3), cv::Scalar(255, 255, 255));
+		}
+
+	public:
+		double scale_x() {
+			return width/(extent_x*2.);
+		}
+
+		double scale_y() {
+			return height/(extent_y*2.);
+		}
+
+		Graphics2D(config::Config cfg, const config::Units& units): units(units) {
+			extent_x = cfg.get_or_fail<double>("simulation.size.extent.x");
+			extent_y = cfg.get_or_fail<double>("simulation.size.extent.y");
+
+			auto scale = cfg.get<double>("simulation.video.size.scale").value_or(1.);
+			width = cfg.get<double>("simulation.video.size.width").value_or(extent_x*2.*scale);
+			height = cfg.get<double>("simulation.video.size.height").value_or(extent_y*2.*scale);
+
+			use_video = cfg.get("simulation.video.output").has_value();
+			if (use_video) {
+				writer = video::Writer(cfg, width, height);
+			}
+
+			point_size = cfg.get_or_fail<double>("simulation.video.point_size");
+
+			cv::namedWindow("galaxy", cv::WINDOW_NORMAL);
+		}
+
+		~Graphics2D() {
+			cv::destroyWindow("galaxy");
 		}
 
 		template<typename Engine, typename TreePolicy>

@@ -7,8 +7,14 @@
 #include "simulation.hpp"
 #include "mass_distribution.hpp"
 #include "integration.hpp"
-#include "tree_graphics_2d.hpp"
-#include "simple_graphics_3d.hpp"
+
+#ifdef USE_OPENCV_GRAPHICS
+	#include "graphics/opencv/tree_graphics_2d.hpp"
+	#include "graphics/opencv/simple_graphics_3d.hpp"
+#else
+	#include "graphics/raylib/graphics_2d.hpp"
+	#include "graphics/raylib/graphics_3d.hpp"
+#endif
 
 
 namespace signals {
