@@ -28,7 +28,7 @@ kde `simulation.toml` je platný soubor s nastavením simulace. Ukázkové nasta
 ### Kompilace
 
 #### macOS + Linux
-```
+```sh
 mkdir build
 cmake ../src
 cmake --build .
@@ -37,6 +37,13 @@ cmake --build .
 
 #### Windows
 Stačí pustit CMake přes VisualStudio a pak zbuilděný program spustit se správnými argumenty.
+
+#### (Volitelné) OpenCV backend
+Z důvodů kompatibility je defaultní backend Raylib. Pro přepnutí na OpenCV backend stačí v build složce spustit následující příkaz:
+```sh
+cmake -DUSE_OPENCV_GRAPHICS=YES .
+```
+Při příštím `cmake --build .` se program zbuildí s OpenCV backendem.
 
 ### Obrázky a videa
 ![2D simulace s vizualizací quadtree](assets/quadtree.png "2D simulace s vizualizací quadtree")
