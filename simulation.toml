@@ -36,5 +36,5 @@ file = "out.mp4"
 fps = 24
 
 [simulation.plots.energy]
-enable = true
+enable = false
 size = { width = 500, height = 200 }

@@ -129,9 +129,9 @@ namespace graphics {
 			raylib::SetTargetFPS(max_fps);
 
 			camera = { 0 };
-			camera.position = (raylib::Vector3){ 0.0f, 0.0f, -4*std::max(std::max(extent_x, extent_y), extent_z)/far_divisor };
-			camera.target = (raylib::Vector3){ 0.0f, 0.0f, 0.0f };
-			camera.up = (raylib::Vector3){ 0.0f, 10.0f, 0.0f };
+			camera.position = raylib::Vector3 { 0.0f, 0.0f, -4*std::max(std::max(extent_x, extent_y), extent_z)/far_divisor };
+			camera.target = raylib::Vector3 { 0.0f, 0.0f, 0.0f };
+			camera.up = raylib::Vector3 { 0.0f, 10.0f, 0.0f };
 			camera.fovy = 45.0f;
 			camera.projection = raylib::CAMERA_PERSPECTIVE;
 		}

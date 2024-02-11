@@ -11,17 +11,17 @@ namespace plots {
 
 	class PlotWindow {
 	private:
+		bool is_running;
 		int win_context;
+		std::size_t width;
+		std::size_t height;
 
 		void activate() {
 			raylib::SetActiveWindowContext(win_context);
 		}
 
 	public:
-		PlotWindow(std::size_t w, std::size_t h) {
-			win_context = raylib::InitWindowPro(w, h, "plot", 0);
-			activate();
-		}
+		PlotWindow(std::size_t w, std::size_t h): width(w), height(h), is_running(false) {}
 
 		void set_name(const std::string& name) {
 			activate();
@@ -29,6 +29,11 @@ namespace plots {
 		}
 
 		void begin_plot() {
+			if (!is_running) {
+				win_context = raylib::InitWindowPro(width, height, "plot", 0);
+				is_running = true;
+			}
+
 			activate();
 			raylib::BeginDrawing();
 		}
