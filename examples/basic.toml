@@ -39,6 +39,8 @@ type = "tree"
 eps = 2.5
 
 # Aproximační parametr stromu
+# čím vyšší theta, tím víc zanedbáváme
+# pro theta = 0 se jedná o naivní simulaci všech interakcí
 theta = 0.2
 
 [simulation.integration]
