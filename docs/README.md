@@ -24,7 +24,7 @@
 ```sh
 galaxy simulation.toml
 ```
-kde `simulation.toml` je platný soubor s nastavením simulace. Ukázkové nastavení simulací naleznete ve složce [examples](../examples).
+kde `simulation.toml` je platný soubor s nastavením simulace. Ukázkové nastavení simulací naleznete ve složce [examples](../examples). V souboru [examples/basic.toml](../examples/basic.toml) je v komentářích dokumentace ke všem základním nastavením simulace.
 
 ### Kompilace
 

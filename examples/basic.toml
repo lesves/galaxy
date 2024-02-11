@@ -1,18 +1,28 @@
 [physical]
+# Fyzikální konstanty v základních jednotkách
 G0 = 6.67430E-11 # m³/(kg·s²)
 
 [simulation]
+# Dimenze simulace
 dim = 2
 
 [simulation.units]
+# Zde nastavíme jednotky simulace,
+# to se dělá z důvodu vyšší přesnosti
+# (aby v simulaci nefigurovala příliš velká a nepřesná čísla)
 dist = { val = 0.1, unit = "kpc" }
 time = { val = 1.0, unit = "Myear" }
 mass = { val = 1.0, unit = "mass_sun" }
 
 [simulation.size]
+# Extent určuje rozměry simulace, 
+# maximální vzdálenost v daném směru od (0, 0)
 extent = { x = 200, y = 200 }
 
 [simulation.mass_distribution]
+# Zde se nastaví počáteční podmínky simulace,
+# zatím je možné pouze nastavit distribuci hmotnosti
+# (počáteční rychlosti se určí samy)
 type = "simple_exponential"
 N = 1000
 total_mass = 1E11
@@ -20,22 +30,27 @@ total_mass = 1E11
 lambda = 0.05
 
 [simulation.engine]
+# Jediný podporovaný engine je "tree"
 type = "tree"
 
-# Plummer potential distance parameter
-# (prevents huge forces between close points)
+# Vzdálenostní parametr Plummerova potenciálu
+# zabraňuje tomu, aby mezi dvěma blízkými body
+# vznikla příliš velká síla na náš časový krok
 eps = 2.5
 
-# Tree approximation parameter
+# Aproximační parametr stromu
 theta = 0.2
 
 [simulation.integration]
+# Integrační metoda simulace a časový krok (dt)
 type = "leapfrog"
 dt = 1.0
 
 [simulation.video]
+# Velikost bodu v simulaci
 point_size = 2
 
 [simulation.plots.energy]
+# Graf energie a jeho velikost
 enable = true
 size = { height = 200, width = 500 }
