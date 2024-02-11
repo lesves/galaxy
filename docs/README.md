@@ -31,6 +31,7 @@ kde `simulation.toml` je platný soubor s nastavením simulace. Ukázkové nasta
 #### macOS + Linux
 ```sh
 mkdir build
+cd build
 cmake ../src
 cmake --build .
 ./galaxy ../examples/basic.toml
