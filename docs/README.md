@@ -1,5 +1,47 @@
-## Project Specification and Documentation
+## Simulátor galaxií
 
-Put your project proposal in this folder and create a link from this [README](README.md).
+### Základní informace
 
-Do the same with project documentation later.
+`galaxy` je jednoduchý *polofyzikální* simulátor galaxií napsaný v C++.
+
+### Funkce
+
+- Orthtree a aproximované simulace s pomocí algoritmu Barnes-Hut
+- 2D a 3D simulace
+- Nastavitelnost jednotek simulace
+- Grafy zachování energie
+- Dva vykreslovací backendy:
+    - OpenCV
+        - podporuje zapisování mp4 videa
+    - Raylib
+        - původní backend bylo OpenCV, nešlo mi ale rozběhnout na Windowsu, takže nakonec vznikl Raylibový backend
+        - bohužel o něco pomalejší
+- (Zatím) dvě základní integrační metody (eulerovská a leapfrog)
+- Možnosti konfigurace počátečních podmínek simulace
+
+### Použití
+```sh
+galaxy simulation.toml
+```
+kde `simulation.toml` je platný soubor s nastavením simulace.
+
+### Kompilace
+
+#### macOS + Linux
+```
+mkdir build
+cmake ../src
+cmake --build .
+./galaxy ../examples/basic.toml
+```
+
+#### Windows
+Stačí pustit CMake přes VisualStudio a pak zbuilděný program spustit se správnými argumenty.
+
+### Ukázky
+Ukázkové nastavení simulací naleznete ve složce [examples](../examples).
+
+### Obrázky a videa
+![2D simulace s vizualizací quadtree](assets/quadtree.png "2D simulace s vizualizací quadtree")
+![3D simulace kolize dvou jednoduchých spirálních galaxií](assets/collision.gif "3D simulace kolize dvou jednoduchých spirálních galaxií")
+![Jednoduchá simulace eliptické galaxie](assets/sphere.gif "Jednoduchá simulace eliptické galaxie")
