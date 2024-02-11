@@ -1,5 +1,5 @@
-#ifndef GALAXY_TREE_GRAPHICS_2D_H
-#define GALAXY_TREE_GRAPHICS_2D_H
+#ifndef GALAXY_GRAPHICS_2D_H
+#define GALAXY_GRAPHICS_2D_H
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -7,8 +7,8 @@
 
 #include "../../orthtree.hpp"
 #include "../../config.hpp"
-#include "../../video.hpp"
 #include "../../utils.hpp"
+#include "video.hpp"
 
 
 namespace graphics {

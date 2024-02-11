@@ -6,10 +6,9 @@
 #include "orthtree.hpp"
 #include "spatial.hpp"
 #include "config.hpp"
-#include "plots.hpp"
 #include <utility>
-//#include <algorithm>
-//#include <execution>
+
+#include "graphics/plots.hpp"
 
 
 namespace simulation {

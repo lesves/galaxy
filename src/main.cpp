@@ -2,15 +2,16 @@
 #include <vector>
 #include <csignal>
 #include "config.hpp"
-#include "video.hpp"
 #include "spatial.hpp"
 #include "simulation.hpp"
 #include "mass_distribution.hpp"
 #include "integration.hpp"
 
 #ifdef USE_OPENCV_GRAPHICS
-	#include "graphics/opencv/tree_graphics_2d.hpp"
-	#include "graphics/opencv/simple_graphics_3d.hpp"
+	#include "graphics/opencv/graphics_2d.hpp"
+	#include "graphics/opencv/graphics_3d.hpp"
+
+	#include "graphics/opencv/video.hpp"
 #else
 	#include "graphics/raylib/graphics_2d.hpp"
 	#include "graphics/raylib/graphics_3d.hpp"
@@ -42,7 +43,9 @@ void run(config::Config cfg, const config::Units& units) {
 			break;
 		}
 	}
-	video::Writer::handle_exit();
+	#ifdef USE_OPENCV_GRAPHICS
+		video::Writer::handle_exit();
+	#endif
 }
 
 

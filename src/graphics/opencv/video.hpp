@@ -3,7 +3,7 @@
 
 #include <opencv2/videoio.hpp>
 #include <unordered_set>
-#include "config.hpp"
+#include "../../config.hpp"
 
 
 namespace video {

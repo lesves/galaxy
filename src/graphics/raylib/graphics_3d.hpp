@@ -23,6 +23,8 @@ namespace graphics {
 
 		raylib::Camera camera;
 
+		int win_context;
+
 		static constexpr float far_divisor = 100.f;
 		static constexpr float sensitivity = 0.002f;
 
@@ -122,9 +124,9 @@ namespace graphics {
 
 			point_size = cfg.get_or_fail<float>("simulation.video.point_size");
 
-			raylib::InitWindow(width, height, "galaxy");
+			win_context = raylib::InitWindowPro(width, height, "galaxy", raylib::FLAG_WINDOW_RESIZABLE);
+			raylib::SetActiveWindowContext(win_context);
 			raylib::SetTargetFPS(max_fps);
-			raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
 
 			camera = { 0 };
 			camera.position = (raylib::Vector3){ 0.0f, 0.0f, -4*std::max(std::max(extent_x, extent_y), extent_z)/far_divisor };
@@ -135,11 +137,13 @@ namespace graphics {
 		}
 
 		~Graphics3D() {
+			raylib::SetActiveWindowContext(win_context);
 			raylib::CloseWindow();
 		}
 
 		template<typename Engine, typename TreeType>
 		void show(typename Engine::Scalar time, const Engine* e, const TreeType& t) {
+			raylib::SetActiveWindowContext(win_context);
 			show_frame(time, e);
 
 			while (btn_pressed() && !raylib::WindowShouldClose()) {
@@ -164,6 +168,7 @@ namespace graphics {
 		}
 
 		bool poll_close() {
+			raylib::SetActiveWindowContext(win_context);
 			return raylib::WindowShouldClose();
 		}
 	};

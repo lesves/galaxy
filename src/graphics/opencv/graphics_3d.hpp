@@ -1,5 +1,5 @@
-#ifndef GALAXY_SIMPLE_GRAPHICS_3D_H
-#define GALAXY_SIMPLE_GRAPHICS_3D_H
+#ifndef GALAXY_GRAPHICS_3D_H
+#define GALAXY_GRAPHICS_3D_H
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -14,6 +14,7 @@
 #include "../../orthtree.hpp"
 #include "../../config.hpp"
 #include "../../utils.hpp"
+#include "video.hpp"
 
 
 namespace graphics {

@@ -9,24 +9,24 @@ set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 23)
 
 # === Libraries ===
 include(FetchContent)
-
-# OpenCV
-find_package( OpenCV REQUIRED )
-include_directories( ${OpenCV_INCLUDE_DIRS} )
-target_link_libraries( ${TARGET_NAME} ${OpenCV_LIBS} )
+#set(FETCHCONTENT_QUIET FALSE)
 
 if(USE_OPENCV_GRAPHICS)
     add_compile_definitions(USE_OPENCV_GRAPHICS=1)
+
+    # OpenCV
+    find_package( OpenCV REQUIRED )
+    include_directories( ${OpenCV_INCLUDE_DIRS} )
+    target_link_libraries( ${TARGET_NAME} ${OpenCV_LIBS} )
 else()
     # Raylib
-    set(FETCHCONTENT_QUIET FALSE)
     set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(
         raylib
-        GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
-        GIT_TAG "master"
+        GIT_REPOSITORY "https://github.com/JeffM2501/raylib.git"
+        GIT_TAG "multi-monitor_50"
         GIT_PROGRESS TRUE
     )
     FetchContent_MakeAvailable(raylib)

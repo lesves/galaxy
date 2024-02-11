@@ -19,6 +19,8 @@ namespace graphics {
 
 		const config::Units& units;
 
+		int win_context;
+
 		/*bool use_video;
 		video::Writer writer;*/
 
@@ -53,7 +55,7 @@ namespace graphics {
 					raylib::DrawCircle(
 						(point[0] + extent_x) * scale_x(),
 						(point[1] + extent_y) * scale_y(),
-						point_size,
+						point_size/2.f,
 						raylib::White
 					);
 				}
@@ -119,17 +121,19 @@ namespace graphics {
 
 			point_size = cfg.get_or_fail<float>("simulation.video.point_size");
 
-			raylib::InitWindow(width, height, "galaxy");
+			win_context = raylib::InitWindowPro(width, height, "galaxy", raylib::FLAG_WINDOW_RESIZABLE);
+			raylib::SetActiveWindowContext(win_context);
 			raylib::SetTargetFPS(max_fps);
-			raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
 		}
 
 		~Graphics2D() {
+			raylib::SetActiveWindowContext(win_context);
 			raylib::CloseWindow();
 		}
 
 		template<typename Engine, typename TreePolicy>
 		void show(typename TreePolicy::Item::Scalar time, const Engine* e, const orthtree::QuadTree<typename TreePolicy::Item, TreePolicy>& qt) {
+			raylib::SetActiveWindowContext(win_context);
 			raylib::BeginDrawing();
 
 			raylib::ClearBackground(raylib::Black);
@@ -146,6 +150,7 @@ namespace graphics {
 		}
 
 		bool poll_close() {
+			raylib::SetActiveWindowContext(win_context);
 			return raylib::WindowShouldClose();
 		}
 	};
