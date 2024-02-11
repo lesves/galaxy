@@ -16,12 +16,18 @@ extent = { x = 200, y = 200 }
 type = "simple_exponential"
 N = 1000
 total_mass = 1E11
+# Exponential distribution parameter
 lambda = 0.05
 
 [simulation.engine]
 type = "tree"
-eps = 2.5 # Plummer potential distance parameter
-theta = 0.2 # Tree approximation parameter
+
+# Plummer potential distance parameter
+# (prevents huge forces between close points)
+eps = 2.5
+
+# Tree approximation parameter
+theta = 0.2
 
 [simulation.integration]
 type = "leapfrog"

@@ -16,7 +16,7 @@ extent = { x = 100, y = 100 }
 type = "simple_exponential"
 N = 1000
 total_mass = 1E11
-lambda = 0.1
+lambda = 0.1 # Exponential distribution parameter
 
 [simulation.engine]
 type = "tree"
