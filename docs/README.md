@@ -23,7 +23,7 @@
 ```sh
 galaxy simulation.toml
 ```
-kde `simulation.toml` je platný soubor s nastavením simulace.
+kde `simulation.toml` je platný soubor s nastavením simulace. Ukázkové nastavení simulací naleznete ve složce [examples](../examples).
 
 ### Kompilace
 
@@ -37,9 +37,6 @@ cmake --build .
 
 #### Windows
 Stačí pustit CMake přes VisualStudio a pak zbuilděný program spustit se správnými argumenty.
-
-### Ukázky
-Ukázkové nastavení simulací naleznete ve složce [examples](../examples).
 
 ### Obrázky a videa
 ![2D simulace s vizualizací quadtree](assets/quadtree.png "2D simulace s vizualizací quadtree")
