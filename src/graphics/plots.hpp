@@ -62,8 +62,8 @@ namespace plots {
 
 	public:
 		EnergyStatsPlot(config::Config cfg): LinearStatsPlot(
-			cfg.get_or_fail<double>("simulation.plots.energy.size.width"),
-			cfg.get_or_fail<double>("simulation.plots.energy.size.height")
+			cfg.get<double>("simulation.plots.energy.size.width").value_or(500.),
+			cfg.get<double>("simulation.plots.energy.size.height").value_or(200.)
 		) {}
 
 		virtual std::string name() override {

@@ -1,0 +1,34 @@
+[physical]
+G0 = 6.67430E-11 # m³/(kg·s²)
+
+[simulation]
+dim = 2
+
+[simulation.units]
+dist = { val = 0.1, unit = "kpc" }
+time = { val = 1.0, unit = "Myear" }
+mass = { val = 1.0, unit = "mass_sun" }
+
+[simulation.size]
+extent = { x = 30, y = 30 }
+
+[simulation.mass_distribution]
+type = "test_case_1"
+total_mass = 1E11
+
+[simulation.engine]
+type = "tree"
+eps = 2.5 # Plummer potential distance parameter
+theta = 0.2 # Tree approximation parameter
+
+[simulation.integration]
+type = "leapfrog"
+dt = 1.0
+
+[simulation.video]
+point_size = 2
+size.scale = 5
+
+[simulation.plots.energy]
+enable = true
+size = { height = 200, width = 500 }

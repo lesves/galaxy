@@ -14,7 +14,7 @@
 #include "../../orthtree.hpp"
 #include "../../config.hpp"
 #include "../../utils.hpp"
-#include "video.hpp"
+//#include "video.hpp"
 
 
 namespace graphics {
@@ -63,11 +63,6 @@ namespace graphics {
 				cv::Point3d maxp(extent_x, extent_y, extent_z);
 				cv::Point3d minp(-extent_x, -extent_y, -extent_z);
 				viz.showWidget("bbox", cv::viz::WCube(minp, maxp));
-
-				if (time == 0.) {
-					// Fix for viz bug with bad zoom with texts
-					viz.resetCamera();
-				}
 			}
 		}
 
@@ -104,6 +99,11 @@ namespace graphics {
 			viz.setRenderingProperty("galaxy", cv::viz::POINT_SIZE, point_size);
 
 			viz.setBackgroundColor(cv::Scalar(0, 0, 0));
+
+			if (time == 0.) {
+				// Fix for viz bug with bad zoom
+				viz.resetCamera();
+			}
 
 			if (use_video) {
 				auto sc = viz.getScreenshot();
