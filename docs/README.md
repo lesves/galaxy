@@ -2,11 +2,11 @@
 
 ### Základní informace
 
-`galaxy` je jednoduchý *polofyzikální* simulátor galaxií napsaný v C++.
+`galaxy` je jednoduchý *polofyzikální* n-částicový simulátor galaxií napsaný v C++.
 
 ### Funkce
 
-- Orthtree a aproximované simulace s pomocí algoritmu Barnes-Hut
+- Orthtree a aproximované n-částicové simulace s pomocí algoritmu Barnes-Hut
 - 2D a 3D simulace
 - Nastavitelnost jednotek simulace
 - Grafy zachování energie
