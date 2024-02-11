@@ -134,6 +134,8 @@ namespace graphics {
 		template<typename Engine, typename TreePolicy>
 		void show(typename TreePolicy::Item::Scalar time, const Engine* e, const orthtree::QuadTree<typename TreePolicy::Item, TreePolicy>& qt) {
 			raylib::SetActiveWindowContext(win_context);
+			raylib::SetWindowTitle("galaxy");
+			
 			raylib::BeginDrawing();
 
 			raylib::ClearBackground(raylib::Black);

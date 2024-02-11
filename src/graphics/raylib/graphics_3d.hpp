@@ -144,6 +144,8 @@ namespace graphics {
 		template<typename Engine, typename TreeType>
 		void show(typename Engine::Scalar time, const Engine* e, const TreeType& t) {
 			raylib::SetActiveWindowContext(win_context);
+			raylib::SetWindowTitle("galaxy");
+			
 			show_frame(time, e);
 
 			while (btn_pressed() && !raylib::WindowShouldClose()) {
