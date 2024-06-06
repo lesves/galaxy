@@ -25,8 +25,8 @@ else()
 
     FetchContent_Declare(
         raylib
-        GIT_REPOSITORY "https://github.com/JeffM2501/raylib.git"
-        GIT_TAG "multi-monitor_50"
+        GIT_REPOSITORY "https://github.com/raylib-extras/raylib_multi_window_experimental.git"
+        GIT_TAG "master"
         GIT_PROGRESS TRUE
     )
     FetchContent_MakeAvailable(raylib)
